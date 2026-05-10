@@ -1,0 +1,136 @@
+# ============================================================
+# Dewenwils PTW04 - Smart Timer Box 240VAC
+# PCB: RT-PTW01-1.0 / SoC: BK7231N
+# ============================================================
+# GPIO Mapping:
+#   P26 -> OUTPUT -> Relay 1 (Line L1)
+#   P24 -> OUTPUT -> Relay 2 (Line L2)
+#   P21 -> OUTPUT -> LED Load (D2 red)
+#   P22 -> OUTPUT -> LED Power (D1 red)
+#   P23 -> OUTPUT -> LED WiFi (D3 blue)
+#   P28 -> INPUT  -> Bouton ON/OFF (SW1)
+# ============================================================
+
+esphome:
+  name: Dewenwils-PTW04
+  friendly_name: "Dewenwils Contactor"
+  on_boot:
+    priority: 800
+    then:
+      - output.turn_off: relay_l1
+      - output.turn_off: relay_l2
+      - output.turn_off: led_load
+      - output.turn_on: led_power
+
+bk72xx:
+  board: generic-bk7231n-qfn32-tuya
+
+logger:
+  baud_rate: 0
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "Dewenwils Fallback Hotspot"
+    password: !secret ap_password
+
+captive_portal:
+
+output:
+  - platform: gpio
+    id: relay_l1
+    pin: P26
+
+  - platform: gpio
+    id: relay_l2
+    pin: P24
+
+  - platform: gpio
+    id: led_load
+    pin: P21
+
+  - platform: gpio
+    id: led_power
+    pin:
+      number: P22
+      inverted: true
+
+light:
+  - platform: status_led
+    name: "LED WiFi"
+    id: wifi_led
+    pin: P23
+    internal: true
+
+switch:
+  - platform: template
+    name: "Power"
+    id: load_switch
+    icon: "mdi:power"
+    optimistic: true
+    restore_mode: ALWAYS_OFF
+    turn_on_action:
+      - output.turn_on: relay_l1
+      - output.turn_on: relay_l2
+      - output.turn_on: led_load
+    turn_off_action:
+      - output.turn_off: relay_l1
+      - output.turn_off: relay_l2
+      - output.turn_off: led_load
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: P28
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Button"
+    id: btn_onoff
+    on_multi_click:
+      - timing:
+          - ON for 50ms to 500ms
+          - OFF for at least 50ms
+        then:
+          - switch.toggle: load_switch
+      - timing:
+          - ON for at least 3s
+        then:
+          - button.press: restart_button
+
+button:
+  - platform: restart
+    name: "Restart"
+    id: restart_button
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+
+  - platform: wifi_signal
+    name: "WiFi Signal dBm"
+    id: wifi_signal_dbm
+    update_interval: 60s
+    internal: true
+
+  - platform: copy
+    source_id: wifi_signal_dbm
+    name: "WiFi Signal "
+    unit_of_measurement: "%"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Adress"
+    ssid:
+      name: "SSID"
