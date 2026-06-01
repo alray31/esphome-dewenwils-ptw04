@@ -105,10 +105,10 @@ All GPIOs confirmed through empirical testing after firmware dump analysis.
 
 | GPIO | Direction | Function | Notes |
 |------|-----------|----------|-------|
-| **P24** | OUTPUT | Relay L2 | Active LOW — drives NO2 via NPN transistor |
-| **P26** | OUTPUT | Relay L1 | Active LOW — drives NO1 via NPN transistor |
+| **P24** | OUTPUT | Relay SET | Active LOW — latches both relays ON via NPN transistor |
+| **P26** | OUTPUT | Relay RESET | Active LOW — latches both relays OFF via NPN transistor |
 | **P21** | OUTPUT | LED Load (D2 red) | Active HIGH |
-| **P22** | OUTPUT | LED Power (D1) | Active LOW — always ON when powered |
+| **P22** | OUTPUT | LED Power (D1) | Active HIGH — always ON when powered |
 | **P23** | OUTPUT | LED WiFi (D3 blue) | Active HIGH — ESPHome status_led |
 | **P28** | INPUT | Button SW1 | Active LOW — INPUT_PULLUP |
 
@@ -133,6 +133,8 @@ BK7231N GPIO (active LOW)
 ```
 
 When the GPIO goes LOW, the transistor saturates and the relay coil is energized. This is why all relay outputs use `inverted: true` in ESPHome.
+
+> **Important:** The relays on the PTW04 are **bistable (latching)** — they maintain their state without continuous current. A short pulse (100ms) on the SET line latches them ON; a short pulse on the RESET line latches them OFF. This is why the ESPHome configuration uses timed impulses rather than sustained GPIO levels.
 
 ---
 
@@ -225,28 +227,6 @@ The `TEST` pad (CEN) might be used to trigger download mode (untested), but it i
 
 ## ESPHome Configuration
 
-```yaml
-# dewenwils-ptw04.yaml
-# Full configuration available in this repository
-
-esphome:
-  name: chauffage-cabanon
-  friendly_name: "Contacteur Chauffage Cabanon"
-  on_boot:
-    priority: 800
-    then:
-      - output.turn_off: relay_l1
-      - output.turn_off: relay_l2
-      - output.turn_off: led_load
-      - output.turn_on: led_power
-
-bk72xx:
-  board: generic-bk7231n-qfn32-tuya
-
-logger:
-  baud_rate: 0  # Frees up P26/P27 for relay use
-```
-
 > See [dewenwils-ptw04.yaml](dewenwils-ptw04.yaml) for the complete configuration.
 
 ### Key Configuration Decisions
@@ -254,8 +234,9 @@ logger:
 | Setting | Value | Reason |
 |---------|-------|--------|
 | `baud_rate: 0` | 0 | Disables UART2 logger, freeing P26/P27 for relay GPIOs |
-| `restore_mode` | `ALWAYS_OFF` | Safety — controller always starts OFF regardless of saved state, can be modified for your needss |
-| `on_boot priority` | 800 | Forces relays LOW before any other initialization |
+| `restore_mode` | `ALWAYS_OFF` | Safety — load always starts OFF regardless of saved state |
+| `on_boot priority` | 800 | Sends RESET pulse before any ESPHome initialization |
+| Relay logic | Bistable impulse | 100ms SET/RESET pulses — relays hold state without power |
 | Relay pins | `inverted: true` | Relay drivers are active LOW (NPN transistor logic) |
 
 ---
@@ -284,7 +265,7 @@ After flashing, power the control board via the USB-TTL adapter and wait for it 
 
 | LED | Color | GPIO | Behavior |
 |-----|-------|------|----------|
-| D1 Power | Green | P22 (active LOW) | ON whenever the device is powered |
+| D1 Power | Green | P22 (active HIGH) | ON whenever the device is powered |
 | D2 Load | Red | P21 (active HIGH) | ON when the load (relays) is active |
 | D3 WiFi | Blue | P23 (active HIGH) | ESPHome status LED — see below |
 
@@ -306,7 +287,7 @@ After flashing, power the control board via the USB-TTL adapter and wait for it 
 
 ### Safety Features
 
-- **Always OFF at boot:** Relays are forced LOW immediately at startup via `on_boot priority: 800`, before any ESPHome initialization occurs. The load never pulses on during boot. **can be modified to fit your needs
+- **Always OFF at boot:** A RESET pulse is sent immediately at startup via `on_boot priority: 800`, clearing the bistable relay memory before any ESPHome initialization. The load never turns on unexpectedly during boot, regardless of the relay's previous state.
 - **No state restore:** `restore_mode: ALWAYS_OFF` ignores any previously saved state — the heater always starts OFF after a power outage or restart. **can be modified to fit your needs
 - **Dual-phase switching:** Both relays (L1 and L2) are always toggled simultaneously to safely interrupt both phases of the 240VAC circuit. 
 
