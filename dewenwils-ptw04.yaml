@@ -1,24 +1,36 @@
 # ============================================================
 # Dewenwils PTW04 - Smart Timer Box 240VAC
-# PCB: RT-PTW01-1.0 / SoC: BK7231N
+# PCB: RT-PTW01-1.0 / SoC: BK7231N (LibreTiny)
+# https://github.com/alray31/esphome-dewenwils-ptw04
 # ============================================================
-# GPIO Mapping:
-#   P26 -> OUTPUT -> Relay 1 (Line L1)
-#   P24 -> OUTPUT -> Relay 2 (Line L2)
-#   P21 -> OUTPUT -> LED Load (D2 red)
-#   P22 -> OUTPUT -> LED Power (D1 red)
-#   P23 -> OUTPUT -> LED WiFi (D3 blue)
-#   P28 -> INPUT  -> Bouton ON/OFF (SW1)
+# Confirmed GPIO Map:
+#   P24 -> OUTPUT -> Relay SET   (latches relays ON)
+#   P26 -> OUTPUT -> Relay RESET (latches relays OFF)
+#   P21 -> OUTPUT -> Load LED (D2 red)
+#   P22 -> OUTPUT -> Power LED (D1)
+#   P23 -> OUTPUT -> WiFi LED (D3 blue) - ESPHome status_led
+#   P28 -> INPUT  -> Physical button (SW1)
+#
+# Bistable (latching) relay logic:
+#   SET   = 100ms LOW pulse on P24 (inverted: true -> turn_on)
+#   RESET = 100ms LOW pulse on P26 (inverted: true -> turn_on)
+#
+# Reserved / unusable pins on generic-bk7231n-qfn32-tuya:
+#   P2, P3, P4, P5, P10, P11, P25, P27
 # ============================================================
 
 esphome:
-  name: Dewenwils-PTW04
-  friendly_name: "Dewenwils Contactor"
+  name: dewenwils-ptw04
+  friendly_name: "Dewenwils PTW04"
   on_boot:
     priority: 800
     then:
-      - output.turn_off: relay_l1
-      - output.turn_off: relay_l2
+      # Send RESET pulse at boot to ensure relays start OFF
+      # regardless of their bistable memory state
+      - output.turn_on: relay_reset
+      - delay: 100ms
+      - output.turn_off: relay_reset
+      - output.turn_off: relay_set
       - output.turn_off: led_load
       - output.turn_on: led_power
 
@@ -26,7 +38,7 @@ bk72xx:
   board: generic-bk7231n-qfn32-tuya
 
 logger:
-  baud_rate: 0
+  baud_rate: 0  # Disables UART2 logger, freeing P26/P27 for relay GPIOs
 
 api:
   encryption:
@@ -40,52 +52,83 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
   ap:
-    ssid: "Dewenwils Fallback Hotspot"
+    ssid: "PTW04 Fallback Hotspot"
     password: !secret ap_password
 
 captive_portal:
 
+# ============================================================
+# OUTPUTS
+# ============================================================
+
 output:
+  # Relay SET - LOW pulse latches relays ON
   - platform: gpio
-    id: relay_l1
-    pin: P26
+    id: relay_set
+    pin:
+      number: P24
+      inverted: true
 
+  # Relay RESET - LOW pulse latches relays OFF
   - platform: gpio
-    id: relay_l2
-    pin: P24
+    id: relay_reset
+    pin:
+      number: P26
+      inverted: true
 
+  # Load LED - follows relay state
   - platform: gpio
     id: led_load
     pin: P21
 
+  # Power LED - always ON when device is powered
   - platform: gpio
     id: led_power
-    pin:
-      number: P22
-      inverted: true
+    pin: P22
+
+# ============================================================
+# WiFi LED (D3) - ESPHome status_led
+# Fast blink  = no WiFi connection
+# Slow blink  = WiFi connected, API disconnected
+# Off         = WiFi + Home Assistant API connected
+# ============================================================
 
 light:
   - platform: status_led
-    name: "LED WiFi"
+    name: "WiFi LED"
     id: wifi_led
     pin: P23
     internal: true
 
+# ============================================================
+# SWITCH - Load control
+# Bistable relay logic: short SET/RESET pulses
+# ALWAYS_OFF: relays always start OFF regardless of saved state
+# ============================================================
+
 switch:
   - platform: template
-    name: "Power"
+    name: "Load"
     id: load_switch
     icon: "mdi:power"
     optimistic: true
     restore_mode: ALWAYS_OFF
     turn_on_action:
-      - output.turn_on: relay_l1
-      - output.turn_on: relay_l2
+      - output.turn_on: relay_set    # SET pulse
+      - delay: 100ms
+      - output.turn_off: relay_set
       - output.turn_on: led_load
     turn_off_action:
-      - output.turn_off: relay_l1
-      - output.turn_off: relay_l2
+      - output.turn_on: relay_reset  # RESET pulse
+      - delay: 100ms
+      - output.turn_off: relay_reset
       - output.turn_off: led_load
+
+# ============================================================
+# PHYSICAL BUTTON (SW1)
+# Short press (50-500ms): toggle load
+# Long press  (3s+):      restart device
+# ============================================================
 
 binary_sensor:
   - platform: gpio
@@ -106,10 +149,18 @@ binary_sensor:
         then:
           - button.press: restart_button
 
+# ============================================================
+# BUTTONS
+# ============================================================
+
 button:
   - platform: restart
     name: "Restart"
     id: restart_button
+
+# ============================================================
+# SENSORS
+# ============================================================
 
 sensor:
   - platform: uptime
@@ -123,7 +174,7 @@ sensor:
 
   - platform: copy
     source_id: wifi_signal_dbm
-    name: "WiFi Signal "
+    name: "WiFi Signal"
     unit_of_measurement: "%"
     filters:
       - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
@@ -131,6 +182,6 @@ sensor:
 text_sensor:
   - platform: wifi_info
     ip_address:
-      name: "IP Adress"
+      name: "IP Address"
     ssid:
       name: "SSID"
