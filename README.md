@@ -120,10 +120,15 @@ All GPIOs confirmed through empirical testing after firmware dump analysis.
 | **P26** | OUTPUT | Relay L1 RESET | Active LOW — latches relay L1 OFF via NPN transistor |
 | **P17** | OUTPUT | Relay L2 SET | Active LOW — latches relay L2 ON via NPN transistor |
 | **P15** | OUTPUT | Relay L2 RESET | Active LOW — latches relay L2 OFF via NPN transistor |
+| **P14** | OUTPUT | Relay L3 SET | Active LOW — latches relay L3 (not populated) ON via NPN transistor |
+| **P16** | OUTPUT | Relay L3 RESET | Active LOW — latches relay L3 (not populated) OFF via NPN transistor |
 | **P21** | OUTPUT | LED Load (D2 red) | Active HIGH |
 | **P22** | OUTPUT | LED Power (D1) | Active HIGH — always ON when powered |
 | **P23** | OUTPUT | LED WiFi (D3 blue) | Active HIGH — ESPHome status_led |
 | **P28** | INPUT | Button SW1 | Active LOW — INPUT_PULLUP |
+
+<img width="602" height="568" alt="image" src="https://github.com/user-attachments/assets/13fba3ef-310f-419f-94dc-fac85449f8fb" />
+
 
 ### Reserved / Unusable Pins (generic-bk7231n-qfn32-tuya)
 
