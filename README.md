@@ -1,6 +1,7 @@
-# esphome-dewenwils-ptw04
+# esphome-dewenwils-ptw04 (SHOWT01F)
 ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC Smart Timer Box — replaces Tuya cloud / Dewenwils app with local Home Assistant control via BK7231N (LibreTiny)
 
+> ⚠️**Owners of the SHOWT01E 120V variant: Read the "Hardware details" section! The GPIO pair required to make the "N (load)" contact (not used on the SHOWT01F variant) works are yet to be identified.**
 
 # Dewenwils PTW04 — ESPHome Firmware
 
