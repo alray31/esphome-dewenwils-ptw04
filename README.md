@@ -3,7 +3,7 @@ ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC 40A 3HP Smart Timer B
 
 > ⚠️**Owners of the SHOWT01E 120V variant: Read the "Hardware details" and "GPIO Map" sections! The GPIO pair required to make the "N (load)" relay work (not used on the SHOWT01F variant) are P14 and P15, they were identified in this project but not in use for the SHOWT01F, you'll need to make your own ESPHome YAML to make use of P14 and P16 and change the relays logic.**
 
-> ⚠️**Owners of the SHOWT01A 120V variant: This project is imcompatible with this variant. The SHOWT01A uses an ESP8266 MCU, this project is for variants using the Beken BK7231n MCU. The SHOWT01A or similar units using the ESP6266 can be flashed with ESPHome using this projetc: https://devices.esphome.io/devices/dewenwils-heavy-duty-40a-outdoor-plug-howt01a/**
+> ⚠️**Owners of the SHOWT01A variant: This project is imcompatible with this variant. The SHOWT01A uses an ESP8266 MCU, this project is for variants using the Beken BK7231n MCU. The SHOWT01A or similar units using the ESP6266 can be flashed with ESPHome using this projetc: https://devices.esphome.io/devices/dewenwils-heavy-duty-40a-outdoor-plug-howt01a/**
 
 # Dewenwils PTW04 — ESPHome Firmware
 
