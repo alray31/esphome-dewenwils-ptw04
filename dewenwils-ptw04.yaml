@@ -4,16 +4,20 @@
 # https://github.com/alray31/esphome-dewenwils-ptw04
 # ============================================================
 # Confirmed GPIO Map:
-#   P24 -> OUTPUT -> Relay SET   (latches relays ON)
-#   P26 -> OUTPUT -> Relay RESET (latches relays OFF)
-#   P21 -> OUTPUT -> Load LED (D2 red)
-#   P22 -> OUTPUT -> Power LED (D1)
-#   P23 -> OUTPUT -> WiFi LED (D3 blue) - ESPHome status_led
+#   P24 -> OUTPUT -> Relay L1 SET   (active LOW, inverted: true)
+#   P26 -> OUTPUT -> Relay L1 RESET (active LOW, inverted: true)
+#   P17 -> OUTPUT -> Relay L2 SET   (active LOW, inverted: true)
+#   P15 -> OUTPUT -> Relay L2 RESET (active LOW, inverted: true)
+#   P21 -> OUTPUT -> LED Load (D2 red)
+#   P22 -> OUTPUT -> LED Power (D1)
+#   P23 -> OUTPUT -> LED WiFi (D3 blue) - ESPHome status_led
 #   P28 -> INPUT  -> Physical button (SW1)
 #
-# Bistable (latching) relay logic:
-#   SET   = 100ms LOW pulse on P24 (inverted: true -> turn_on)
-#   RESET = 100ms LOW pulse on P26 (inverted: true -> turn_on)
+# Bistable (latching) relay logic — two independent relays:
+#   L1 SET   = 100ms LOW pulse on P24
+#   L1 RESET = 100ms LOW pulse on P26
+#   L2 SET   = 100ms LOW pulse on P17
+#   L2 RESET = 100ms LOW pulse on P15
 #
 # Reserved / unusable pins on generic-bk7231n-qfn32-tuya:
 #   P2, P3, P4, P5, P10, P11, P25, P27
@@ -23,15 +27,51 @@ esphome:
   name: dewenwils-ptw04
   friendly_name: "Dewenwils PTW04"
   on_boot:
-    priority: 800
+    priority: -100  # After all components are fully initialized
     then:
-      # Send RESET pulse at boot to ensure relays start OFF
-      # regardless of their bistable memory state
-      - output.turn_on: relay_reset
-      - delay: 100ms
-      - output.turn_off: relay_reset
-      - output.turn_off: relay_set
-      - output.turn_off: led_load
+      - if:
+          condition:
+            lambda: 'return id(power_on_behavior).current_option() == "Always OFF";'
+          then:
+            - switch.turn_off: load_switch
+            - output.turn_on: relay_l1_reset
+            - output.turn_on: relay_l2_reset
+            - delay: 100ms
+            - output.turn_off: relay_l1_reset
+            - output.turn_off: relay_l2_reset
+            - output.turn_off: led_load
+      - if:
+          condition:
+            lambda: 'return id(power_on_behavior).current_option() == "Always ON";'
+          then:
+            - switch.turn_on: load_switch
+            - output.turn_on: relay_l1_set
+            - output.turn_on: relay_l2_set
+            - delay: 100ms
+            - output.turn_off: relay_l1_set
+            - output.turn_off: relay_l2_set
+            - output.turn_on: led_load
+      - if:
+          condition:
+            lambda: 'return id(power_on_behavior).current_option() == "Restore last state";'
+          then:
+            - if:
+                condition:
+                  switch.is_on: load_switch
+                then:
+                  - output.turn_on: relay_l1_set
+                  - output.turn_on: relay_l2_set
+                  - delay: 100ms
+                  - output.turn_off: relay_l1_set
+                  - output.turn_off: relay_l2_set
+                  - output.turn_on: led_load
+                else:
+                  - output.turn_on: relay_l1_reset
+                  - output.turn_on: relay_l2_reset
+                  - delay: 100ms
+                  - output.turn_off: relay_l1_reset
+                  - output.turn_off: relay_l2_reset
+                  - output.turn_off: led_load
       - output.turn_on: led_power
 
 bk72xx:
@@ -62,18 +102,30 @@ captive_portal:
 # ============================================================
 
 output:
-  # Relay SET - LOW pulse latches relays ON
+  # Relay L1 (Line 1) - bistable, active LOW
   - platform: gpio
-    id: relay_set
+    id: relay_l1_set
     pin:
       number: P24
       inverted: true
 
-  # Relay RESET - LOW pulse latches relays OFF
   - platform: gpio
-    id: relay_reset
+    id: relay_l1_reset
     pin:
       number: P26
+      inverted: true
+
+  # Relay L2 (Line 2) - bistable, active LOW
+  - platform: gpio
+    id: relay_l2_set
+    pin:
+      number: P17
+      inverted: true
+
+  - platform: gpio
+    id: relay_l2_reset
+    pin:
+      number: P15
       inverted: true
 
   # Load LED - follows relay state
@@ -102,8 +154,7 @@ light:
 
 # ============================================================
 # SWITCH - Load control
-# Bistable relay logic: short SET/RESET pulses
-# ALWAYS_OFF: relays always start OFF regardless of saved state
+# Both relays (L1 + L2) switch simultaneously
 # ============================================================
 
 switch:
@@ -112,17 +163,39 @@ switch:
     id: load_switch
     icon: "mdi:power"
     optimistic: true
-    restore_mode: ALWAYS_OFF
+    restore_mode: RESTORE_DEFAULT_OFF  # Actual behavior managed by select
     turn_on_action:
-      - output.turn_on: relay_set    # SET pulse
+      - output.turn_on: relay_l1_set
+      - output.turn_on: relay_l2_set
       - delay: 100ms
-      - output.turn_off: relay_set
+      - output.turn_off: relay_l1_set
+      - output.turn_off: relay_l2_set
       - output.turn_on: led_load
     turn_off_action:
-      - output.turn_on: relay_reset  # RESET pulse
+      - output.turn_on: relay_l1_reset
+      - output.turn_on: relay_l2_reset
       - delay: 100ms
-      - output.turn_off: relay_reset
+      - output.turn_off: relay_l1_reset
+      - output.turn_off: relay_l2_reset
       - output.turn_off: led_load
+
+# ============================================================
+# SELECT - Power on behavior
+# Exposed natively in the HA device page under Controls
+# Selection is saved to device flash memory
+# ============================================================
+
+select:
+  - platform: template
+    name: "Power On Behavior"
+    id: power_on_behavior
+    options:
+      - "Always OFF"
+      - "Restore last state"
+      - "Always ON"
+    initial_option: "Always OFF"
+    optimistic: true
+    restore_value: true
 
 # ============================================================
 # PHYSICAL BUTTON (SW1)
