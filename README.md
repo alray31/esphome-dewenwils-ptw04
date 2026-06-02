@@ -58,10 +58,10 @@ Back:
 
 
 - Handles mains voltage (240VAC)
-- Contains 2 populated relays (NO1/L1 and NO2/L2) + 1 empty footprint (NO3/K1)
+- Contains 2 populated **bistable (latching) relays** — Meishuo C-S-105-A-L1 (NO1/L1 and NO2/L2) + 1 empty footprint (NO3)
 - Terminal block connections: `NO3 | N | L2 | NO2 | L2 | L1 | NO1 | L1`
-- AC/DC power supply section providing 3.3V and 12V rails
-- **D1 (Power LED)** is powered by the 12V rail — lights up when 240VAC is connected
+- AC/DC power supply section providing 3.3V and 12V rails to the control board via flat ribbon cable
+- Relay coils driven at 12V via NPN transistor drivers (U4/U5/U6) on the control board
 
 ### Control Board (RT-PTW01-1.0)
 
