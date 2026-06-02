@@ -1,0 +1,196 @@
+# Dewenwils PTW04 - Smart Timer Box 240VAC
+# PCB: RT-PTW01-1.0 / SoC: BK7231N (LibreTiny)
+#
+# GPIO Map:
+#   P24 -> Relay L1 SET   (active LOW, inverted: true)
+#   P26 -> Relay L1 RESET (active LOW, inverted: true)
+#   P17 -> Relay L2 SET   (active LOW, inverted: true)
+#   P15 -> Relay L2 RESET (active LOW, inverted: true)
+#   P21 -> LED Load (D2 red)
+#   P22 -> LED Power (D1)
+#   P23 -> LED WiFi (D3 blue) - status_led
+#   P28 -> Button SW1 (INPUT_PULLUP, active LOW)
+
+esphome:
+  name: dewenwils-ptw04
+  friendly_name: "Dewenwils PTW04"
+  on_boot:
+    priority: -100
+    then:
+      - if:
+          condition:
+            lambda: 'return id(power_on_behavior).current_option() == "Always OFF";'
+          then:
+            - switch.turn_off: load_switch
+            - output.turn_on: relay_l1_reset
+            - output.turn_on: relay_l2_reset
+            - delay: 100ms
+            - output.turn_off: relay_l1_reset
+            - output.turn_off: relay_l2_reset
+            - output.turn_off: led_load
+      - if:
+          condition:
+            lambda: 'return id(power_on_behavior).current_option() == "Always ON";'
+          then:
+            - switch.turn_on: load_switch
+            - output.turn_on: relay_l1_set
+            - output.turn_on: relay_l2_set
+            - delay: 100ms
+            - output.turn_off: relay_l1_set
+            - output.turn_off: relay_l2_set
+            - output.turn_on: led_load
+      - if:
+          condition:
+            lambda: 'return id(power_on_behavior).current_option() == "Restore last state";'
+          then:
+            - if:
+                condition:
+                  switch.is_on: load_switch
+                then:
+                  - output.turn_on: relay_l1_set
+                  - output.turn_on: relay_l2_set
+                  - delay: 100ms
+                  - output.turn_off: relay_l1_set
+                  - output.turn_off: relay_l2_set
+                  - output.turn_on: led_load
+                else:
+                  - output.turn_on: relay_l1_reset
+                  - output.turn_on: relay_l2_reset
+                  - delay: 100ms
+                  - output.turn_off: relay_l1_reset
+                  - output.turn_off: relay_l2_reset
+                  - output.turn_off: led_load
+      - output.turn_on: led_power
+
+bk72xx:
+  board: generic-bk7231n-qfn32-tuya
+
+logger:
+  baud_rate: 0
+
+wifi:
+  ap:
+
+captive_portal:
+
+output:
+  - platform: gpio
+    id: relay_l1_set
+    pin:
+      number: P24
+      inverted: true
+
+  - platform: gpio
+    id: relay_l1_reset
+    pin:
+      number: P26
+      inverted: true
+
+  - platform: gpio
+    id: relay_l2_set
+    pin:
+      number: P17
+      inverted: true
+
+  - platform: gpio
+    id: relay_l2_reset
+    pin:
+      number: P15
+      inverted: true
+
+  - platform: gpio
+    id: led_load
+    pin: P21
+
+  - platform: gpio
+    id: led_power
+    pin: P22
+
+light:
+  - platform: status_led
+    name: "WiFi LED"
+    id: wifi_led
+    pin: P23
+    internal: true
+
+switch:
+  - platform: template
+    name: "Load"
+    id: load_switch
+    icon: "mdi:power"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - output.turn_on: relay_l1_set
+      - output.turn_on: relay_l2_set
+      - delay: 100ms
+      - output.turn_off: relay_l1_set
+      - output.turn_off: relay_l2_set
+      - output.turn_on: led_load
+    turn_off_action:
+      - output.turn_on: relay_l1_reset
+      - output.turn_on: relay_l2_reset
+      - delay: 100ms
+      - output.turn_off: relay_l1_reset
+      - output.turn_off: relay_l2_reset
+      - output.turn_off: led_load
+
+select:
+  - platform: template
+    name: "Power On Behavior"
+    id: power_on_behavior
+    options:
+      - "Always OFF"
+      - "Restore last state"
+      - "Always ON"
+    initial_option: "Always OFF"
+    optimistic: true
+    restore_value: true
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: P28
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Button"
+    id: btn_onoff
+    on_multi_click:
+      - timing:
+          - ON for 50ms to 500ms
+          - OFF for at least 50ms
+        then:
+          - switch.toggle: load_switch
+      - timing:
+          - ON for at least 3s
+        then:
+          - button.press: restart_button
+
+button:
+  - platform: restart
+    name: "Restart"
+    id: restart_button
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+
+  - platform: wifi_signal
+    name: "WiFi Signal dBm"
+    id: wifi_signal_dbm
+    update_interval: 60s
+    internal: true
+
+  - platform: copy
+    source_id: wifi_signal_dbm
+    name: "WiFi Signal"
+    unit_of_measurement: "%"
+    filters:
+      - lambda: return min(max(2 * (x + 100.0), 0.0), 100.0);
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+    ssid:
+      name: "SSID"
