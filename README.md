@@ -80,9 +80,9 @@ Back:
 | **U7** | XJS 5350Z — 5V LDO regulator |
 | **U4/U5/U6** | 3111S JRONK — Dual NPN transistors (SOT-23-6), relay drivers |
 | **SW1** | Push button (ON/OFF + reset) |
-| **D1** | Power LED — driven by 12V rail from power board |
-| **D2** | Load LED (red) — indicates relay state |
-| **D3** | WiFi LED (blue) — indicates WiFi/connection state |
+| **D1** | Power LED — controlled by P22 on BK7231N |
+| **D2** | Load LED (red) — indicates relay state, controlled by P21 |
+| **D3** | WiFi LED (blue) — ESPHome status_led, controlled by P23 |
 | **J5** | Output connector: `VIN, OUT1+, OUT1-, OUT2+, OUT2-, OUT3+, OUT3-, GND` |
 
 #### UART Test Points (clearly silkscreened on PCB)
