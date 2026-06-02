@@ -219,8 +219,10 @@ The `TEST` pad (CEN) might be used to trigger download mode (untested), but it i
 1. In ESPHome dashboard, create a new device using the provided YAML configuration in this repo. Make sure to change the WiFi, OTA and hotspot credentiels to fit your needs.
 2. Click **Install** → **Manual download**, ESPHome will compiles the firmware.
 <img width="624" height="497" alt="image" src="https://github.com/user-attachments/assets/dd984729-c4c5-4577-9f38-9ec5b28e0642" />
+
 3.  → select **UF2 Package** and downloads the .uf2 firmware
 <img width="461" height="489" alt="image" src="https://github.com/user-attachments/assets/be595fa5-0c98-4783-83e8-d5e7da45dcee" />
+
 5. In ltchiptool, select the downloaded `.uf2` and flash it to the device, use the same method as steps 4.2 to trigger download mode if the control board exited download mode (if the board was disconnected between steps 4 and 5).
 
 
