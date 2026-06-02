@@ -31,12 +31,12 @@ ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC Smart Timer Box — r
 | Field | Value |
 |-------|-------|
 | **Brand** | Dewenwils |
-| **Model** | PTW04 |
+| **Model** | PTW04 / SHOWT01F |
 | **Type** | Smart Timer Box / Load Controller |
 | **Input** | 240VAC 60Hz |
 | **Output** | 40A Resistive 240VAC / 3HP 240VAC |
 | **Certifications** | ETL Listed, FCC ID: 2A4G9-016, IC: 26865-014 |
-| **App** | SmartLife (Tuya) |
+| **App** | SmartLife (Tuya) or Dewenwils app |
 | **PCB Reference** | RT-PTW01-1.0 |
 | **PCB Date** | 20240523 |
 
@@ -60,7 +60,7 @@ Back:
 
 
 - Handles mains voltage (240VAC)
-- Contains 2 populated **bistable (latching) relays** — Meishuo C-S-105-A-L1 (NO1/L1 and NO2/L2) + 1 empty footprint (NO3)
+- Contains 2 populated **bistable (latching) relays** — Meishuo C-S-105-A-L1 (NO1/L1 and NO2/L2) + 1 empty footprint (NO3) most likely for the 120V variant (SHOWT01E)
 - Terminal block connections: `NO3 | N | L2 | NO2 | L2 | L1 | NO1 | L1`
 - AC/DC power supply section providing 3.3V and 12V rails to the control board via flat ribbon cable
 - Relay coils driven at 12V via NPN transistor drivers (U4/U5/U6) on the control board
@@ -71,7 +71,7 @@ The third relay footprint (NO3/K1) is not populated on the PTW04 (240VAC model).
 
 On the 240VAC PTW04, this footprint is unused since 240VAC loads are controlled by switching both L1 and L2 simultaneously via the two populated relays.
 
-**For owners of the 120VAC variant (SHOWT01E):** the GPIO pair controlling relay L3 (OUT3+ / OUT3- on connector J5) has not yet been identified in this project. Contributions to identify and map these GPIOs are welcome.
+**For owners of the 120VAC variant (SHOWT01E):** the GPIO pair controlling relay L3 (OUT3+ / OUT3- on connector J5) has not yet been identified in this project. The relays's logic would also need to be modified. Contributions to identify and map these GPIOs are welcome.
 
 
 ### Control Board (RT-PTW01-1.0)
