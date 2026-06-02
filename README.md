@@ -1,5 +1,6 @@
 # esphome-dewenwils-ptw04
-ESPHome firmware for the Dewenwils PTW04 240VAC Smart Timer Box — replaces Tuya cloud / Dewenwils app with local Home Assistant control via BK7231N (LibreTiny)
+ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC Smart Timer Box — replaces Tuya cloud / Dewenwils app with local Home Assistant control via BK7231N (LibreTiny)
+
 
 # Dewenwils PTW04 — ESPHome Firmware
 
@@ -65,11 +66,11 @@ Back:
 
 ### Third relay (NO3/K1)
 
-The third relay footprint (NO3/K1) is not populated on the PTW04 (240VAC model). Based on comparison with the 120VAC variant of this product line, which most likely uses the same PCB, the third relay would be used to switch the **neutral wire to the load** — the 120VAC model has 5 terminals labeled `L1 | L | L2 | N | N(Load)` where `N(Load)` is the switched neutral.
+The third relay footprint (NO3/K1) is not populated on the PTW04 (240VAC model). Based on comparison with the 120VAC variant of this product line (SHOWT01E), which most likely uses the same PCB, the third relay would be used to switch the **neutral wire to the load** — the 120VAC model has 5 terminals labeled `L1 | L | L2 | N | N(Load)` where `N(Load)` is the switched neutral.
 
 On the 240VAC PTW04, this footprint is unused since 240VAC loads are controlled by switching both L1 and L2 simultaneously via the two populated relays.
 
-**For owners of the 120VAC variant:** the GPIO pair controlling relay L3 (OUT3+ / OUT3- on connector J5) has not yet been identified in this project. Contributions to identify and map these GPIOs are welcome.
+**For owners of the 120VAC variant (SHOWT01E):** the GPIO pair controlling relay L3 (OUT3+ / OUT3- on connector J5) has not yet been identified in this project. Contributions to identify and map these GPIOs are welcome.
 
 
 ### Control Board (RT-PTW01-1.0)
