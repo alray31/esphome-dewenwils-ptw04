@@ -105,8 +105,10 @@ All GPIOs confirmed through empirical testing after firmware dump analysis.
 
 | GPIO | Direction | Function | Notes |
 |------|-----------|----------|-------|
-| **P24** | OUTPUT | Relay SET | Active LOW — latches both relays ON via NPN transistor |
-| **P26** | OUTPUT | Relay RESET | Active LOW — latches both relays OFF via NPN transistor |
+| **P24** | OUTPUT | Relay L1 SET | Active LOW — latches relay L1 ON via NPN transistor |
+| **P26** | OUTPUT | Relay L1 RESET | Active LOW — latches relay L1 OFF via NPN transistor |
+| **P17** | OUTPUT | Relay L2 SET | Active LOW — latches relay L2 ON via NPN transistor |
+| **P15** | OUTPUT | Relay L2 RESET | Active LOW — latches relay L2 OFF via NPN transistor |
 | **P21** | OUTPUT | LED Load (D2 red) | Active HIGH |
 | **P22** | OUTPUT | LED Power (D1) | Active HIGH — always ON when powered |
 | **P23** | OUTPUT | LED WiFi (D3 blue) | Active HIGH — ESPHome status_led |
@@ -118,7 +120,7 @@ All GPIOs confirmed through empirical testing after firmware dump analysis.
 |------|-------------|
 | P2, P3, P4, P5 | Internal use / strapping pins |
 | P10, P11 | UART1 (flash / TuyaMCU) |
-| P26, P27 | UART2 (logger) — usable as GPIO only with `baud_rate: 0` |
+| P25, P27 | Reserved by LibreTiny |
 
 ### Relay Driver Circuit
 
@@ -234,9 +236,9 @@ The `TEST` pad (CEN) might be used to trigger download mode (untested), but it i
 | Setting | Value | Reason |
 |---------|-------|--------|
 | `baud_rate: 0` | 0 | Disables UART2 logger, freeing P26/P27 for relay GPIOs |
-| `restore_mode` | `ALWAYS_OFF` | Safety — load always starts OFF regardless of saved state |
-| `on_boot priority` | 800 | Sends RESET pulse before any ESPHome initialization |
-| Relay logic | Bistable impulse | 100ms SET/RESET pulses — relays hold state without power |
+| `restore_mode` | `RESTORE_DEFAULT_OFF` | Actual power-on behavior managed by the select entity |
+| `on_boot priority` | -100 | Ensures all components are fully initialized before boot actions run |
+| Relay logic | Bistable impulse | 100ms SET/RESET pulses — relays hold state without continuous power |
 | Relay pins | `inverted: true` | Relay drivers are active LOW (NPN transistor logic) |
 
 ---
@@ -249,10 +251,11 @@ After flashing, power the control board via the USB-TTL adapter and wait for it 
 
 | Entity | Type | Description |
 |--------|------|-------------|
-| Power | Switch | Main load control (both relays) |
-| ON-OFF | Binary Sensor | Physical button state |
+| Load | Switch | Main load control (both relays simultaneously) |
+| Power On Behavior | Select | Configures load state after power cycle — Always OFF / Restore last state / Always ON |
+| Button | Binary Sensor | Physical button state |
 | WiFi Signal | Sensor | WiFi signal strength in % |
-| IP Adress | Text Sensor | Current IP address |
+| IP Address | Text Sensor | Current IP address |
 | SSID | Text Sensor | Connected WiFi network |
 | Uptime | Sensor | Device uptime |
 | Restart | Button | Remote restart |
@@ -287,9 +290,14 @@ After flashing, power the control board via the USB-TTL adapter and wait for it 
 
 ### Safety Features
 
-- **Always OFF at boot:** A RESET pulse is sent immediately at startup via `on_boot priority: 800`, clearing the bistable relay memory before any ESPHome initialization. The load never turns on unexpectedly during boot, regardless of the relay's previous state.
-- **No state restore:** `restore_mode: ALWAYS_OFF` ignores any previously saved state — the heater always starts OFF after a power outage or restart. **can be modified to fit your needs
-- **Dual-phase switching:** Both relays (L1 and L2) are always toggled simultaneously to safely interrupt both phases of the 240VAC circuit. 
+- **Configurable power-on behavior:** The "Power On Behavior" select entity in HA controls what happens after any power cycle or restart — three options are available directly from the device page in Home Assistant, no reflashing required:
+  - **Always OFF** *(default, recommended for heaters and safety-critical loads)* — both relays are forced OFF at every boot via a RESET pulse, regardless of previous state
+  - **Restore last state** — relays resume the state they were in before the power was cut, stored in device flash memory
+  - **Always ON** — both relays are forced ON at every boot via a SET pulse
+
+- **Dual-phase switching:** Both relays (L1 and L2) always switch simultaneously, safely interrupting both phases of the 240VAC circuit.
+
+- **Bistable relay safety:** Because the relays are bistable (latching), they maintain their physical position even during a power failure. The boot RESET pulse ensures a known-good state is applied on every startup.
 
 ### Wiring Diagram (240VAC Single Load)
 
@@ -297,10 +305,10 @@ After flashing, power the control board via the USB-TTL adapter and wait for it 
                     PTW04
                  ┌─────────┐
 Power L1 ───────►│ Line L1 │──► Load L1
-                 │         │         │
-                 │  Relay  │       [Load]
-                 │         │         │
-Power L2 ───────►│ Line L2 │──► Load L2
+                 │  Relay  │         │
+                 │         │       [Load]
+                 │ Line L2 │         │
+Power L2 ───────►│  Relay  │──► Load L2
                  └─────────┘
 ```
 
