@@ -63,6 +63,15 @@ Back:
 - AC/DC power supply section providing 3.3V and 12V rails to the control board via flat ribbon cable
 - Relay coils driven at 12V via NPN transistor drivers (U4/U5/U6) on the control board
 
+### Third relay (NO3/K1)
+
+The third relay footprint (NO3/K1) is not populated on the PTW04 (240VAC model). Based on comparison with the 120VAC variant of this product line, which most likely uses the same PCB, the third relay would be used to switch the **neutral wire to the load** — the 120VAC model has 5 terminals labeled `L1 | L | L2 | N | N(Load)` where `N(Load)` is the switched neutral.
+
+On the 240VAC PTW04, this footprint is unused since 240VAC loads are controlled by switching both L1 and L2 simultaneously via the two populated relays.
+
+**For owners of the 120VAC variant:** the GPIO pair controlling relay L3 (OUT3+ / OUT3- on connector J5) has not yet been identified in this project. Contributions to identify and map these GPIOs are welcome.
+
+
 ### Control Board (RT-PTW01-1.0)
 
 Front:
