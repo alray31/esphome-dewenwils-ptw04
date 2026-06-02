@@ -8,6 +8,8 @@
 #   P26 -> OUTPUT -> Relay L1 RESET (active LOW, inverted: true)
 #   P17 -> OUTPUT -> Relay L2 SET   (active LOW, inverted: true)
 #   P15 -> OUTPUT -> Relay L2 RESET (active LOW, inverted: true)
+#   P16 -> OUTPUT -> Relay L3 SET   (active LOW, inverted: true) *** not used on SHOWT01F ***
+#   P14 -> OUTPUT -> Relay L3 RESET (active LOW, inverted: true) *** not used on SHOWT01F ***
 #   P21 -> OUTPUT -> LED Load (D2 red)
 #   P22 -> OUTPUT -> LED Power (D1)
 #   P23 -> OUTPUT -> LED WiFi (D3 blue) - ESPHome status_led
@@ -18,6 +20,8 @@
 #   L1 RESET = 100ms LOW pulse on P26
 #   L2 SET   = 100ms LOW pulse on P17
 #   L2 RESET = 100ms LOW pulse on P15
+#   L3 SET   = 100ms LOW pulse on P16 *** not used on SHOWT01F ***
+#   L3 RESET = 100ms LOW pulse on P14 *** not used on SHOWT01F ***
 #
 # Reserved / unusable pins on generic-bk7231n-qfn32-tuya:
 #   P2, P3, P4, P5, P10, P11, P25, P27
