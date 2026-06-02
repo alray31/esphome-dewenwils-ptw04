@@ -1,13 +1,15 @@
 # esphome-dewenwils-ptw04 (SHOWT01F)
-ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC Smart Timer Box — replaces Tuya cloud / Dewenwils app with local Home Assistant control via BK7231N (LibreTiny)
+ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC 40A 3HP Smart Timer Box — replaces Tuya cloud / Dewenwils app with local Home Assistant control via ESPHome (LibreTiny)
 
-> ⚠️**Owners of the SHOWT01E 120V variant: Read the "Hardware details" section! The GPIO pair required to make the "N (load)" contact (not used on the SHOWT01F variant) works are yet to be identified.**
+> ⚠️**Owners of the SHOWT01E 120V variant: Read the "Hardware details" and "GPIO Map" sections! The GPIO pair required to make the "N (load)" relay work (not used on the SHOWT01F variant) are P14 and P15, they were identified in this project but not in use for the SHOWT01F, you'll need to make your own ESPHome YAML to make use of P14 and P16 and change the relays logic.**
+
+> ⚠️**Owners of the SHOWT01A 120V variant: This project is imcompatible with this variant. The SHOWT01A uses an ESP8266 MCU, this project is for variants using the Beken BK7231n MCU. The SHOWT01A or similar units using the ESP6266 can be flashed with ESPHome using this projetc: https://devices.esphome.io/devices/dewenwils-heavy-duty-40a-outdoor-plug-howt01a/**
 
 # Dewenwils PTW04 — ESPHome Firmware
 
 > Replace the stock Tuya firmware on the Dewenwils PTW04 Smart Timer Box with ESPHome, enabling local control via Home Assistant without any cloud dependency.
 
-<img width="630" height="630" alt="image" src="https://github.com/user-attachments/assets/109f06f6-71f5-4f1f-b279-bf0fe2caec88" />
+<img width="300" height="300" alt="image" src="https://github.com/user-attachments/assets/109f06f6-71f5-4f1f-b279-bf0fe2caec88" />
 
 
 ---
@@ -42,7 +44,7 @@ ESPHome firmware for the Dewenwils PTW04 / SHOWT01F 240VAC Smart Timer Box — r
 
 The PTW04 is a WiFi-enabled load controller designed for 240VAC applications such as pool pumps, heaters, and motors. It uses two relays wired in series to switch both L1 and L2 lines of a 240VAC circuit simultaneously. A third relay footprint (NO3/K1) is present on the power board but not populated.
 
-<img width="1574" height="2470" alt="20260510_091451" src="https://github.com/user-attachments/assets/11db5240-16ff-406c-8d3b-f143fe9042e6" />
+<img width="191" height="300" alt="20260510_091451" src="https://github.com/user-attachments/assets/11db5240-16ff-406c-8d3b-f143fe9042e6" />
 
 ---
 
@@ -53,10 +55,10 @@ The device consists of two PCBs connected via a flat ribbon cable:
 ### Power Board (PTW01-POWER)
 
 Front:
-<img width="2470" height="1534" alt="20260505_201407" src="https://github.com/user-attachments/assets/a908c2b9-7283-4c1a-8111-50d8bad2f32b" />
+<img width="300" height="186" alt="20260505_201407" src="https://github.com/user-attachments/assets/a908c2b9-7283-4c1a-8111-50d8bad2f32b" />
 
 Back:
-<img width="2864" height="1718" alt="20260505_201353" src="https://github.com/user-attachments/assets/56da2ae5-d380-48c0-ac8a-105fbb2b4ef5" />
+<img width="300" height="180" alt="20260505_201353" src="https://github.com/user-attachments/assets/56da2ae5-d380-48c0-ac8a-105fbb2b4ef5" />
 
 
 - Handles mains voltage (240VAC)
@@ -77,10 +79,10 @@ On the 240VAC PTW04, this footprint is unused since 240VAC loads are controlled 
 ### Control Board (RT-PTW01-1.0)
 
 Front:
-<img width="1276" height="2150" alt="20260505_201524" src="https://github.com/user-attachments/assets/2b68837c-a1c7-48dc-9e16-5ac28667e15c" />
+<img width="178" height="300" alt="20260505_201524" src="https://github.com/user-attachments/assets/2b68837c-a1c7-48dc-9e16-5ac28667e15c" />
 
 Back:
-<img width="1098" height="1952" alt="20260505_201514" src="https://github.com/user-attachments/assets/69a052b4-4df9-4de2-beb4-bcdacc41eeef" />
+<img width="169" height="300" alt="20260505_201514" src="https://github.com/user-attachments/assets/69a052b4-4df9-4de2-beb4-bcdacc41eeef" />
 
 
 
@@ -106,8 +108,10 @@ Back:
 | `3V3` | 3.3V power input |
 | `U2TX` | UART2 TX (reserved — do not use) |
 | `U2RX` | UART2 RX (reserved — do not use) |
-| `TEST` | Likely CEN (chip enable / reset) |
+| `TEST` | P8 — factory test pad (not CEN) |
+| `ATE`  | P7 — factory test pad - do not use |          |
 
+> **Note:** The CEN pin is pulled HIGH to 3.3V via a 1kΩ resistor and is not exposed as a test pad. Download mode is triggered by power cycling via the GND probe — no CEN access required.
 ---
 
 ## GPIO Map
@@ -120,8 +124,8 @@ All GPIOs confirmed through empirical testing after firmware dump analysis.
 | **P26** | OUTPUT | Relay L1 RESET | Active LOW — latches relay L1 OFF via NPN transistor |
 | **P17** | OUTPUT | Relay L2 SET | Active LOW — latches relay L2 ON via NPN transistor |
 | **P15** | OUTPUT | Relay L2 RESET | Active LOW — latches relay L2 OFF via NPN transistor |
-| **P14** | OUTPUT | Relay L3 SET | Active LOW — latches relay L3 (not populated) ON via NPN transistor |
-| **P16** | OUTPUT | Relay L3 RESET | Active LOW — latches relay L3 (not populated) OFF via NPN transistor |
+| **P14** | OUTPUT | Relay L3 RESET | Active LOW — latches relay L3 OFF via NPN transistor |
+| **P16** | OUTPUT | Relay L3 SET   | Active LOW — latches relay L3 ON via NPN transistor  |
 | **P21** | OUTPUT | LED Load (D2 red) | Active HIGH |
 | **P22** | OUTPUT | LED Power (D1) | Active HIGH — always ON when powered |
 | **P23** | OUTPUT | LED WiFi (D3 blue) | Active HIGH — ESPHome status_led |
@@ -165,9 +169,9 @@ When the GPIO goes LOW, the transistor saturates and the relay coil is energized
 - 4× dupont female-to-female jumper wires
 - **BDM frame + 4 BDM probes** (spring-loaded pogo pins) — used in this project for reliable contact on the silkscreened pads without soldering
 
-<img width="894" height="697" alt="image" src="https://github.com/user-attachments/assets/b7255491-b908-4c03-bb6c-868a3decbbf8" />
-<img width="604" height="634" alt="image" src="https://github.com/user-attachments/assets/fd7b81fd-cc33-4dd6-8430-518fb145401a" />
-<img width="570" height="313" alt="image" src="https://github.com/user-attachments/assets/6ba7ab21-586f-4133-9e20-ed69648feef3" />
+<img width="300" height="234" alt="image" src="https://github.com/user-attachments/assets/b7255491-b908-4c03-bb6c-868a3decbbf8" />
+<img width="286" height="300" alt="image" src="https://github.com/user-attachments/assets/fd7b81fd-cc33-4dd6-8430-518fb145401a" />
+<img width="300" height="165" alt="image" src="https://github.com/user-attachments/assets/6ba7ab21-586f-4133-9e20-ed69648feef3" />
 
 
 
@@ -202,25 +206,23 @@ Using the BDM frame with 4 pogo probes, position them on the silkscreened pads:
 | `U1RX` | **TX** (cross-connect) |
 | `3V3` | 3.3V |
 
-<img width="1848" height="4000" alt="20260505_155049" src="https://github.com/user-attachments/assets/910271d7-f230-4649-be68-2fa0498147f0" />
-<img width="1848" height="2172" alt="20260505_155101" src="https://github.com/user-attachments/assets/af414d06-7e60-456f-a5e5-dc0ac0f692a5" />
+<img width="139" height="300" alt="20260505_155049" src="https://github.com/user-attachments/assets/910271d7-f230-4649-be68-2fa0498147f0" />
+<img width="255" height="300" alt="20260505_155101" src="https://github.com/user-attachments/assets/af414d06-7e60-456f-a5e5-dc0ac0f692a5" />
 
 
 > **Note:** Do not connect to U2TX/U2RX — these are UART2 (logger) and correspond to the relay GPIOs P26/P27.
 
 ### Step 3 — Backup the Original Firmware
 
-Always backup before flashing. Open ltchiptool, select **BK7231N** and perform a full flash read:
-
-```
-ltchiptool flash read -d /dev/ttyUSB0 backup_ptw04_original.bin
-```
+Always backup before flashing. Open ltchiptool, select **BK7231N** and perform a full flash read
 
 Keep this backup file in a safe location. It contains the original Tuya firmware and can be used to restore the device to factory state.
 
 ### Step 4 — Enter Download Mode (No CEN Pin Required)
 
-The `TEST` pad (CEN) might be used to trigger download mode (untested), but it is not strictly necessary. The following method was used successfully on this device:
+The `TEST` pad is connected to P8 (factory test pad, not CEN). CEN is pulled HIGH via a 1kΩ resistor internally and is not directly accessible as a pad.
+
+The following method was used successfully on this device:
 
 1. Launch ltchiptool and start the chip detection / flash operation
 2. While ltchiptool is waiting for the chip to respond, **briefly touch a jumper wire from GND to the GND pad repeatedly** (tap GND to GND 2–3 times in quick succession during power-up)
@@ -234,10 +236,10 @@ The `TEST` pad (CEN) might be used to trigger download mode (untested), but it i
 
 1. In ESPHome dashboard, create a new device using the provided YAML configuration in this repo. Make sure to change the WiFi, OTA and hotspot credentiels to fit your needs.
 2. Click **Install** → **Manual download**, ESPHome will compiles the firmware.
-<img width="624" height="497" alt="image" src="https://github.com/user-attachments/assets/dd984729-c4c5-4577-9f38-9ec5b28e0642" />
+<img width="300" height="239" alt="image" src="https://github.com/user-attachments/assets/dd984729-c4c5-4577-9f38-9ec5b28e0642" />
 
 3.  → select **UF2 Package** and downloads the .uf2 firmware
-<img width="461" height="489" alt="image" src="https://github.com/user-attachments/assets/be595fa5-0c98-4783-83e8-d5e7da45dcee" />
+<img width="283" height="300" alt="image" src="https://github.com/user-attachments/assets/be595fa5-0c98-4783-83e8-d5e7da45dcee" />
 
 5. In ltchiptool, select the downloaded `.uf2` and flash it to the device, use the same method as steps 4.2 to trigger download mode if the control board exited download mode (if the board was disconnected between steps 4 and 5).
 
